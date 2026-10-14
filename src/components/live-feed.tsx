@@ -1,19 +1,26 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTrovia } from "@/lib/store";
 import { formatInr, formatViewers } from "@/lib/format";
 import type { Show } from "@/lib/types";
 import Link from "next/link";
+import { FollowButton } from "@/components/follow-button";
+import { WaShareButton } from "@/components/wa-share-button";
+import { shareCopyLot, shareCopyShow } from "@/lib/share";
 
-function FeedSlide({ show }: { show: Show }) {
-  const { getSeller, lots, bids } = useTrovia();
+function FeedSlide({ show, pinned }: { show: Show; pinned?: boolean }) {
+  const { getSeller, lots, bids, isFollowing } = useTrovia();
   const router = useRouter();
   const seller = getSeller(show.sellerId);
   const lot = show.currentLotId ? lots[show.currentLotId] : null;
   const recentBids = bids.filter((b) => b.showId === show.id).length;
   const endingSoon =
-    lot?.endsAt != null && lot.endsAt - Date.now() < 12_000 && lot.status === "live";
+    lot?.endsAt != null &&
+    lot.endsAt - Date.now() < 12_000 &&
+    lot.status === "live";
+  const following = isFollowing(show.sellerId);
 
   return (
     <section
@@ -30,6 +37,11 @@ function FeedSlide({ show }: { show: Show }) {
           <span className="h-1.5 w-1.5 rounded-full bg-white" />
           Live
         </span>
+        {(pinned || following) && (
+          <span className="rounded-md bg-[var(--trovia-acid)] px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--trovia-ink)]">
+            Following
+          </span>
+        )}
         <span className="rounded-md bg-black/45 px-2 py-1 text-[10px] text-white/90 backdrop-blur">
           {formatViewers(show.viewers)} watching
         </span>
@@ -71,7 +83,7 @@ function FeedSlide({ show }: { show: Show }) {
             {lot.status === "live" ? ` · ${formatInr(lot.currentBid)}` : ""}
           </p>
         )}
-        <div className="mt-5 flex flex-wrap items-center gap-3">
+        <div className="mt-5 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => router.push(`/live/${show.id}`)}
@@ -79,17 +91,34 @@ function FeedSlide({ show }: { show: Show }) {
           >
             Jump in · अंदर आओ
           </button>
-          <span className="text-xs text-white/50">Swipe for next live ↓</span>
+          {seller && <FollowButton sellerId={seller.id} variant="dark" />}
+          <WaShareButton
+            text={
+              lot
+                ? shareCopyLot(show, seller, lot)
+                : shareCopyShow(show, seller)
+            }
+            label="WA share"
+            variant="dark"
+          />
+          <span className="text-xs text-white/50">Swipe next ↓</span>
         </div>
       </div>
     </section>
   );
 }
 
-/** Vertical Reels-style live discovery — stay in the vibe */
+/** Vertical Reels-style live discovery — followed hosts pinned first */
 export function LiveFeed() {
-  const { shows, loading } = useTrovia();
-  const live = shows.filter((s) => s.status === "live");
+  const { shows, loading, following } = useTrovia();
+  const live = useMemo(() => {
+    const all = shows.filter((s) => s.status === "live");
+    return [...all].sort((a, b) => {
+      const af = following.includes(a.sellerId) ? 0 : 1;
+      const bf = following.includes(b.sellerId) ? 0 : 1;
+      return af - bf;
+    });
+  }, [shows, following]);
 
   if (loading) {
     return (
@@ -109,8 +138,8 @@ export function LiveFeed() {
       <div className="flex h-[min(60dvh,520px)] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-[var(--trovia-ink)]/20 bg-gradient-to-b from-white/40 to-[var(--trovia-panel)]/50 px-6 text-center">
         <p className="font-display text-2xl">Feed&apos;s quiet — room still warm</p>
         <p className="mt-2 max-w-sm text-sm text-[var(--trovia-muted)]">
-          कोई लाइव नहीं अभी · peek upcoming drops or go live as a curated seller.
-          Don&apos;t bounce to WA — stay on Trovia.
+          कोई लाइव नहीं अभी · follow a host so the next drop pings you here —
+          not only on WhatsApp.
         </p>
         <Link
           href="/seller"
@@ -125,7 +154,11 @@ export function LiveFeed() {
   return (
     <div className="flex max-h-[min(92dvh,820px)] flex-col gap-3 overflow-y-auto overscroll-y-contain snap-y snap-mandatory scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {live.map((show) => (
-        <FeedSlide key={show.id} show={show} />
+        <FeedSlide
+          key={show.id}
+          show={show}
+          pinned={following.includes(show.sellerId)}
+        />
       ))}
     </div>
   );

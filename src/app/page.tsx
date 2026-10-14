@@ -4,10 +4,11 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { ShowCard } from "@/components/show-card";
 import { LiveFeed } from "@/components/live-feed";
+import { LiveAlerts } from "@/components/live-alerts";
 import { useTrovia } from "@/lib/store";
 
 export default function HomePage() {
-  const { shows, loading } = useTrovia();
+  const { shows, loading, following } = useTrovia();
   const live = shows.filter((s) => s.status === "live");
   const upcoming = shows.filter((s) => s.status === "scheduled");
   const ended = shows.filter((s) => s.status === "ended");
@@ -26,13 +27,19 @@ export default function HomePage() {
               Trovia
             </p>
             <h1 className="mt-3 max-w-xl text-lg text-[var(--trovia-ink)]/80 sm:text-xl">
-              Thrift live that holds you — swipe shows, bid in-room, don&apos;t
-              bounce to WhatsApp mid-drop.
+              Follow your thrift hosts — when they go live, we pull you back in
+              (and WA share deep-links to the room).
             </h1>
             <p className="mt-2 max-w-lg text-sm text-[var(--trovia-muted)] sm:text-base">
-              लाइव थ्रिफ्ट · स्क्रॉल करो · बिड करो · UPI — pan-India curated
-              closets, courier home.
+              फॉलो करो · लाइव अलर्ट · WhatsApp share — pan-India curated closets,
+              courier home.
             </p>
+            {following.length > 0 && (
+              <p className="mt-2 text-xs font-medium text-[var(--trovia-acid-ink)]">
+                Following {following.length} host
+                {following.length === 1 ? "" : "s"} · live ones pin to the top
+              </p>
+            )}
             <div className="mt-6 flex flex-wrap gap-3">
               <a
                 href="#live"
@@ -52,13 +59,14 @@ export default function HomePage() {
 
         <section id="live" className="px-4 pb-10 sm:px-8">
           <div className="mx-auto max-w-lg lg:max-w-xl">
+            <LiveAlerts />
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
                 <h2 className="font-display text-2xl tracking-tight sm:text-3xl">
                   Live feed
                 </h2>
                 <p className="text-sm text-[var(--trovia-muted)]">
-                  Reels energy · swipe next show · stay in Trovia
+                  Following pinned first · swipe next · stay in Trovia
                 </p>
               </div>
               {live[0] && (

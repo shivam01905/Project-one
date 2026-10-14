@@ -20,6 +20,7 @@ import {
   sellers,
   shows as seedShows,
 } from "./seed";
+import { loadFollows, saveFollows } from "./share";
 import type {
   AuctionMode,
   BidEvent,
@@ -29,6 +30,13 @@ import type {
   Order,
   Show,
 } from "./types";
+
+export type LiveAlert = {
+  id: string;
+  sellerId: string;
+  showId: string;
+  at: number;
+};
 
 interface TroviaState {
   role: DemoRole;
@@ -40,6 +48,16 @@ interface TroviaState {
   orders: Order[];
   /** Demo buyer's max-bid ceilings per lot */
   maxBids: Record<string, number>;
+  /** Seller ids the demo buyer follows (localStorage) */
+  following: string[];
+  isFollowing: (sellerId: string) => boolean;
+  followSeller: (sellerId: string) => void;
+  unfollowSeller: (sellerId: string) => void;
+  toggleFollow: (sellerId: string) => void;
+  /** Mock “seller is live” alerts for followed hosts */
+  liveAlerts: LiveAlert[];
+  dismissLiveAlert: (id: string) => void;
+  dismissAllLiveAlerts: () => void;
   checkoutError: string | null;
   clearCheckoutError: () => void;
   getSeller: (id: string) => (typeof sellers)[number] | undefined;
@@ -101,9 +119,42 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
   const [bids, setBids] = useState<BidEvent[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [maxBids, setMaxBids] = useState<Record<string, number>>({});
+  const [following, setFollowing] = useState<string[]>([]);
+  const [followsReady, setFollowsReady] = useState(false);
+  const [liveAlerts, setLiveAlerts] = useState<LiveAlert[]>([]);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [loading] = useState(false);
+
+  useEffect(() => {
+    setFollowing(loadFollows());
+    setFollowsReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!followsReady) return;
+    saveFollows(following);
+  }, [following, followsReady]);
+
+  // When follows load, surface any already-live followed sellers
+  useEffect(() => {
+    if (!followsReady || following.length === 0) return;
+    const alerts: LiveAlert[] = shows
+      .filter((s) => s.status === "live" && following.includes(s.sellerId))
+      .map((s) => ({
+        id: `boot-${s.id}`,
+        sellerId: s.sellerId,
+        showId: s.id,
+        at: Date.now(),
+      }));
+    if (alerts.length) {
+      setLiveAlerts((prev) => {
+        const have = new Set(prev.map((a) => a.showId));
+        const add = alerts.filter((a) => !have.has(a.showId));
+        return add.length ? [...add, ...prev] : prev;
+      });
+    }
+  }, [followsReady, following, shows]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -305,32 +356,76 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
     [role],
   );
 
-  const goLive = useCallback((showId: string) => {
-    setShows((prev) =>
-      prev.map((s) =>
-        s.id === showId
-          ? {
-              ...s,
-              status: "live",
-              startedAt: Date.now(),
-              viewers: Math.max(s.viewers, 12),
-              currentLotId: s.currentLotId ?? s.lotIds[0] ?? null,
-            }
-          : s,
-      ),
+  const isFollowing = useCallback(
+    (sellerId: string) => following.includes(sellerId),
+    [following],
+  );
+
+  const followSeller = useCallback((sellerId: string) => {
+    setFollowing((prev) =>
+      prev.includes(sellerId) ? prev : [...prev, sellerId],
     );
-    setChat((c) => [
-      ...c,
-      {
-        id: `sys-live-${Date.now()}`,
-        showId,
-        user: "system",
-        text: "Show is LIVE — thrift drop across India ✨",
-        at: Date.now(),
-        kind: "system",
-      },
-    ]);
   }, []);
+
+  const unfollowSeller = useCallback((sellerId: string) => {
+    setFollowing((prev) => prev.filter((id) => id !== sellerId));
+  }, []);
+
+  const toggleFollow = useCallback((sellerId: string) => {
+    setFollowing((prev) =>
+      prev.includes(sellerId)
+        ? prev.filter((id) => id !== sellerId)
+        : [...prev, sellerId],
+    );
+  }, []);
+
+  const dismissLiveAlert = useCallback((id: string) => {
+    setLiveAlerts((prev) => prev.filter((a) => a.id !== id));
+  }, []);
+
+  const dismissAllLiveAlerts = useCallback(() => setLiveAlerts([]), []);
+
+  const goLive = useCallback(
+    (showId: string) => {
+      const target = shows.find((s) => s.id === showId);
+      setShows((prev) =>
+        prev.map((s) =>
+          s.id === showId
+            ? {
+                ...s,
+                status: "live",
+                startedAt: Date.now(),
+                viewers: Math.max(s.viewers, 12),
+                currentLotId: s.currentLotId ?? s.lotIds[0] ?? null,
+              }
+            : s,
+        ),
+      );
+      setChat((c) => [
+        ...c,
+        {
+          id: `sys-live-${Date.now()}`,
+          showId,
+          user: "system",
+          text: "Show is LIVE — thrift drop across India ✨",
+          at: Date.now(),
+          kind: "system",
+        },
+      ]);
+      if (target && following.includes(target.sellerId)) {
+        setLiveAlerts((prev) => [
+          {
+            id: `live-${showId}-${Date.now()}`,
+            sellerId: target.sellerId,
+            showId,
+            at: Date.now(),
+          },
+          ...prev.filter((a) => a.showId !== showId),
+        ]);
+      }
+    },
+    [shows, following],
+  );
 
   const endShow = useCallback(
     (showId: string) => {
@@ -559,6 +654,14 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
       bids,
       orders,
       maxBids,
+      following,
+      isFollowing,
+      followSeller,
+      unfollowSeller,
+      toggleFollow,
+      liveAlerts,
+      dismissLiveAlert,
+      dismissAllLiveAlerts,
       checkoutError,
       clearCheckoutError,
       getSeller,
@@ -587,6 +690,14 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
       bids,
       orders,
       maxBids,
+      following,
+      isFollowing,
+      followSeller,
+      unfollowSeller,
+      toggleFollow,
+      liveAlerts,
+      dismissLiveAlert,
+      dismissAllLiveAlerts,
       checkoutError,
       clearCheckoutError,
       getSeller,

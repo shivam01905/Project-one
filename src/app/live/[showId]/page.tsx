@@ -6,8 +6,11 @@ import { useParams, useRouter } from "next/navigation";
 import { StreamStage } from "@/components/stream-stage";
 import { LiveChat } from "@/components/live-chat";
 import { LotPanel } from "@/components/lot-panel";
+import { FollowButton } from "@/components/follow-button";
+import { WaShareButton } from "@/components/wa-share-button";
 import { useTrovia } from "@/lib/store";
 import { formatViewers } from "@/lib/format";
+import { shareCopyLot, shareCopyShow, shareCopyWin } from "@/lib/share";
 import type { Order } from "@/lib/types";
 
 export default function LiveRoomPage() {
@@ -21,11 +24,24 @@ export default function LiveRoomPage() {
     getSeller,
     loading,
     advanceToNextLot,
+    liveAlerts,
+    dismissLiveAlert,
   } = useTrovia();
   const show = shows.find((s) => s.id === showId);
   const seller = show ? getSeller(show.sellerId) : undefined;
   const lot = show?.currentLotId ? lots[show.currentLotId] : null;
-  const [winBanner, setWinBanner] = useState<string | null>(null);
+
+  // Clear “seller is live” remind once you're in the room
+  useEffect(() => {
+    if (!showId) return;
+    for (const a of liveAlerts) {
+      if (a.showId === showId) dismissLiveAlert(a.id);
+    }
+  }, [showId, liveAlerts, dismissLiveAlert]);
+  const [winBanner, setWinBanner] = useState<{
+    title: string;
+    shareText: string;
+  } | null>(null);
   const [lotKey, setLotKey] = useState(0);
   const advancedFor = useRef<Set<string>>(new Set());
 
@@ -103,8 +119,11 @@ export default function LiveRoomPage() {
   }
 
   function onPaid(order: Order) {
-    setWinBanner(`You got it · ${order.lotTitle}`);
-    setTimeout(() => setWinBanner(null), 4200);
+    setWinBanner({
+      title: `You got it · ${order.lotTitle}`,
+      shareText: shareCopyWin(show!, seller, order.lotTitle),
+    });
+    setTimeout(() => setWinBanner(null), 8000);
   }
 
   return (
@@ -147,6 +166,21 @@ export default function LiveRoomPage() {
             <p className="truncate text-[11px] text-white/65">
               {seller?.displayName} · {seller?.city}
             </p>
+            {seller && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <FollowButton sellerId={seller.id} variant="dark" size="sm" />
+                <WaShareButton
+                  text={
+                    lot
+                      ? shareCopyLot(show, seller, lot)
+                      : shareCopyShow(show, seller)
+                  }
+                  label="WA"
+                  variant="dark"
+                  className="!py-1"
+                />
+              </div>
+            )}
           </div>
         </div>
         <div className="pointer-events-auto flex flex-col items-end gap-2">
@@ -208,12 +242,19 @@ export default function LiveRoomPage() {
       </div>
 
       {winBanner && (
-        <div className="animate-win-burst pointer-events-none absolute inset-x-0 top-[18%] z-30 flex justify-center px-4">
-          <div className="rounded-2xl border border-[var(--trovia-acid)]/40 bg-[var(--trovia-acid)] px-5 py-3 text-center font-display text-lg text-[var(--trovia-ink)] shadow-lg">
-            {winBanner}
+        <div className="animate-win-burst absolute inset-x-0 top-[16%] z-30 flex justify-center px-4">
+          <div className="max-w-sm rounded-2xl border border-[var(--trovia-acid)]/40 bg-[var(--trovia-acid)] px-5 py-3 text-center font-display text-lg text-[var(--trovia-ink)] shadow-lg">
+            {winBanner.title}
             <p className="mt-0.5 font-sans text-[11px] font-medium opacity-80">
               Paid on Trovia · show keeps rolling
             </p>
+            <div className="pointer-events-auto mt-2 flex justify-center">
+              <WaShareButton
+                text={winBanner.shareText}
+                label="Share win on WA"
+                variant="light"
+              />
+            </div>
           </div>
         </div>
       )}
