@@ -5,6 +5,7 @@ import { formatInr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Show } from "@/lib/types";
+import { auctionModeLabel } from "@/lib/auction";
 
 export function SellerControls({ show }: { show: Show }) {
   const {
@@ -15,6 +16,7 @@ export function SellerControls({ show }: { show: Show }) {
     pinLot,
     startAuction,
     passLot,
+    setAuctionMode,
     setRole,
   } = useTrovia();
 
@@ -82,14 +84,42 @@ export function SellerControls({ show }: { show: Show }) {
           {showLots.map((lot) => (
             <li
               key={lot.id}
-              className="flex flex-col gap-2 rounded-xl bg-white/35 p-3 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-2 rounded-xl bg-white/35 p-3"
             >
-              <div>
-                <p className="font-medium">{lot.title}</p>
-                <p className="text-xs text-[var(--trovia-muted)]">
-                  {lot.status} · {formatInr(lot.currentBid)} · {lot.bidCount}{" "}
-                  bids
-                </p>
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="font-medium">{lot.title}</p>
+                  <p className="text-xs text-[var(--trovia-muted)]">
+                    {lot.status} · {formatInr(lot.currentBid)} · {lot.bidCount}{" "}
+                    bids · {auctionModeLabel(lot.auctionMode)}
+                  </p>
+                </div>
+                <div className="flex rounded-full border border-[var(--trovia-ink)]/10 bg-white/50 p-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                  <button
+                    type="button"
+                    disabled={lot.status === "sold"}
+                    onClick={() => setAuctionMode(lot.id, "soft")}
+                    className={`rounded-full px-2.5 py-1 transition ${
+                      lot.auctionMode === "soft"
+                        ? "bg-[var(--trovia-acid)] text-[var(--trovia-ink)]"
+                        : "text-[var(--trovia-muted)]"
+                    }`}
+                  >
+                    Soft close
+                  </button>
+                  <button
+                    type="button"
+                    disabled={lot.status === "sold"}
+                    onClick={() => setAuctionMode(lot.id, "sudden")}
+                    className={`rounded-full px-2.5 py-1 transition ${
+                      lot.auctionMode === "sudden"
+                        ? "bg-[var(--trovia-coral)] text-white"
+                        : "text-[var(--trovia-muted)]"
+                    }`}
+                  >
+                    Sudden 💀
+                  </button>
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -104,7 +134,9 @@ export function SellerControls({ show }: { show: Show }) {
                 <Button
                   size="sm"
                   className="bg-[var(--trovia-acid)] text-[var(--trovia-ink)] hover:bg-[var(--trovia-acid)]/90"
-                  onClick={() => startAuction(show.id, lot.id)}
+                  onClick={() =>
+                    startAuction(show.id, lot.id, lot.auctionMode)
+                  }
                   disabled={lot.status === "sold" || show.status !== "live"}
                 >
                   Start auction
@@ -121,6 +153,10 @@ export function SellerControls({ show }: { show: Show }) {
             </li>
           ))}
         </ul>
+        <p className="mt-3 text-[11px] text-[var(--trovia-muted)]">
+          Soft close extends +10s on bids in the last 8s. Sudden death never
+          extends — clock dies when it dies.
+        </p>
       </div>
 
       <div className="rounded-2xl border border-[var(--trovia-ink)]/10 bg-[var(--trovia-panel)]/80 p-4">
@@ -151,7 +187,7 @@ export function SellerControls({ show }: { show: Show }) {
         <a className="underline underline-offset-2" href={`/live/${show.id}`}>
           live room
         </a>{" "}
-        as Buyer to bid.
+        as Buyer to swipe-bid.
       </p>
     </div>
   );

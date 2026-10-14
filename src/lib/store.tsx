@@ -9,8 +9,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { nextEndsAt } from "./auction";
 import {
   AUCTION_SECONDS,
+  BID_STEP,
   DEMO_BUYER,
   SHIPPING_INR,
   initialChat,
@@ -19,6 +21,7 @@ import {
   shows as seedShows,
 } from "./seed";
 import type {
+  AuctionMode,
   BidEvent,
   ChatMessage,
   DemoRole,
@@ -35,17 +38,25 @@ interface TroviaState {
   chat: ChatMessage[];
   bids: BidEvent[];
   orders: Order[];
+  /** Demo buyer's max-bid ceilings per lot */
+  maxBids: Record<string, number>;
   checkoutError: string | null;
   clearCheckoutError: () => void;
   getSeller: (id: string) => (typeof sellers)[number] | undefined;
   placeBid: (showId: string, lotId: string, amount?: number) => boolean;
+  setMaxBid: (lotId: string, amount: number | null) => void;
+  setAuctionMode: (lotId: string, mode: AuctionMode) => void;
   createBinOrder: (showId: string, lotId: string) => Order | null;
   createWinOrder: (showId: string, lotId: string) => Order | null;
   sendChat: (showId: string, text: string) => void;
   goLive: (showId: string) => void;
   endShow: (showId: string) => void;
   pinLot: (showId: string, lotId: string) => void;
-  startAuction: (showId: string, lotId: string) => void;
+  startAuction: (
+    showId: string,
+    lotId: string,
+    mode?: AuctionMode,
+  ) => void;
   passLot: (showId: string, lotId: string) => void;
   completeMockUpi: (orderId: string, succeed?: boolean) => Order | null;
   pendingOrderId: string | null;
@@ -56,8 +67,19 @@ interface TroviaState {
 const TroviaContext = createContext<TroviaState | null>(null);
 
 function cloneLots(): Record<string, Lot> {
+  const now = Date.now();
   return Object.fromEntries(
-    Object.entries(seedLots).map(([k, v]) => [k, { ...v }]),
+    Object.entries(seedLots).map(([k, v]) => [
+      k,
+      {
+        ...v,
+        // Live seed lots start with an active clock so soft-close is demable
+        endsAt:
+          v.status === "live"
+            ? now + AUCTION_SECONDS * 1000
+            : v.endsAt,
+      },
+    ]),
   );
 }
 
@@ -76,6 +98,7 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
   const [chat, setChat] = useState<ChatMessage[]>(() => [...initialChat]);
   const [bids, setBids] = useState<BidEvent[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [maxBids, setMaxBids] = useState<Record<string, number>>({});
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [loading] = useState(false);
@@ -138,23 +161,33 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
     (showId: string, lotId: string, amount?: number) => {
       const lot = lots[lotId];
       if (!lot || lot.status !== "live") return false;
-      const nextAmount = amount ?? lot.currentBid + 100;
+      if (lot.endsAt && Date.now() >= lot.endsAt) return false;
+
+      let nextAmount = amount ?? lot.currentBid + BID_STEP;
+      const ceiling = maxBids[lotId];
+      if (ceiling != null && nextAmount > ceiling) {
+        if (lot.currentBid >= ceiling) return false;
+        nextAmount = ceiling;
+      }
       if (nextAmount <= lot.currentBid) return false;
 
       const bidder = role === "seller" ? "host-test" : DEMO_BUYER.name;
-      setLots((prev) => ({
-        ...prev,
-        [lotId]: {
-          ...prev[lotId],
-          currentBid: nextAmount,
-          bidCount: prev[lotId].bidCount + 1,
-          highBidder: bidder,
-          endsAt:
-            prev[lotId].endsAt && prev[lotId].endsAt - Date.now() < 8000
-              ? Date.now() + 10000
-              : prev[lotId].endsAt,
-        },
-      }));
+      const extended = nextEndsAt(lot);
+
+      setLots((prev) => {
+        const current = prev[lotId];
+        if (!current || current.status !== "live") return prev;
+        return {
+          ...prev,
+          [lotId]: {
+            ...current,
+            currentBid: nextAmount,
+            bidCount: current.bidCount + 1,
+            highBidder: bidder,
+            endsAt: nextEndsAt(current),
+          },
+        };
+      });
       setBids((b) => [
         ...b,
         {
@@ -166,21 +199,48 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
           at: Date.now(),
         },
       ]);
+      const softNote =
+        lot.auctionMode === "soft" &&
+        lot.endsAt &&
+        extended !== lot.endsAt &&
+        extended != null
+          ? " · soft close +10s"
+          : lot.auctionMode === "sudden"
+            ? " · sudden death"
+            : "";
       setChat((c) => [
         ...c,
         {
           id: `bidchat-${Date.now()}`,
           showId,
           user: bidder,
-          text: `bid ₹${nextAmount.toLocaleString("en-IN")}`,
+          text: `bid ₹${nextAmount.toLocaleString("en-IN")}${softNote}`,
           at: Date.now(),
           kind: "bid",
         },
       ]);
       return true;
     },
-    [lots, role],
+    [lots, role, maxBids],
   );
+
+  const setMaxBid = useCallback((lotId: string, amount: number | null) => {
+    setMaxBids((prev) => {
+      if (amount == null || amount <= 0) {
+        const next = { ...prev };
+        delete next[lotId];
+        return next;
+      }
+      return { ...prev, [lotId]: amount };
+    });
+  }, []);
+
+  const setAuctionMode = useCallback((lotId: string, mode: AuctionMode) => {
+    setLots((prev) => {
+      if (!prev[lotId]) return prev;
+      return { ...prev, [lotId]: { ...prev[lotId], auctionMode: mode } };
+    });
+  }, []);
 
   const makeOrder = useCallback(
     (showId: string, lotId: string, amount: number): Order | null => {
@@ -317,6 +377,11 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
         }
         return next;
       });
+      setMaxBids((m) => {
+        const next = { ...m };
+        delete next[lotId];
+        return next;
+      });
       setChat((c) => [
         ...c,
         {
@@ -332,35 +397,44 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
     [shows, lots],
   );
 
-  const startAuction = useCallback((showId: string, lotId: string) => {
-    setLots((prev) => {
-      const lot = prev[lotId];
-      if (!lot) return prev;
-      return {
-        ...prev,
-        [lotId]: {
-          ...lot,
-          status: "live",
-          endsAt: Date.now() + AUCTION_SECONDS * 1000,
-          currentBid: lot.bidCount === 0 ? lot.startingBid : lot.currentBid,
+  const startAuction = useCallback(
+    (showId: string, lotId: string, mode?: AuctionMode) => {
+      setLots((prev) => {
+        const lot = prev[lotId];
+        if (!lot) return prev;
+        const auctionMode = mode ?? lot.auctionMode;
+        return {
+          ...prev,
+          [lotId]: {
+            ...lot,
+            auctionMode,
+            status: "live",
+            endsAt: Date.now() + AUCTION_SECONDS * 1000,
+            currentBid: lot.bidCount === 0 ? lot.startingBid : lot.currentBid,
+          },
+        };
+      });
+      setShows((prev) =>
+        prev.map((s) => (s.id === showId ? { ...s, currentLotId: lotId } : s)),
+      );
+      const modeLabel =
+        (mode ?? lots[lotId]?.auctionMode) === "sudden"
+          ? "Sudden death · no extensions"
+          : "Soft close · late bids +10s";
+      setChat((c) => [
+        ...c,
+        {
+          id: `auc-${Date.now()}`,
+          showId,
+          user: "system",
+          text: `Auction started · ${AUCTION_SECONDS}s · ${modeLabel}`,
+          at: Date.now(),
+          kind: "system",
         },
-      };
-    });
-    setShows((prev) =>
-      prev.map((s) => (s.id === showId ? { ...s, currentLotId: lotId } : s)),
-    );
-    setChat((c) => [
-      ...c,
-      {
-        id: `auc-${Date.now()}`,
-        showId,
-        user: "system",
-        text: `Auction started · ${AUCTION_SECONDS}s`,
-        at: Date.now(),
-        kind: "system",
-      },
-    ]);
-  }, []);
+      ]);
+    },
+    [lots],
+  );
 
   const passLot = useCallback((showId: string, lotId: string) => {
     setLots((prev) => ({
@@ -432,10 +506,13 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
       chat,
       bids,
       orders,
+      maxBids,
       checkoutError,
       clearCheckoutError,
       getSeller,
       placeBid,
+      setMaxBid,
+      setAuctionMode,
       createBinOrder,
       createWinOrder,
       sendChat,
@@ -456,10 +533,13 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
       chat,
       bids,
       orders,
+      maxBids,
       checkoutError,
       clearCheckoutError,
       getSeller,
       placeBid,
+      setMaxBid,
+      setAuctionMode,
       createBinOrder,
       createWinOrder,
       sendChat,
@@ -485,4 +565,4 @@ export function useTrovia() {
   return ctx;
 }
 
-export { sellers, SHIPPING_INR, AUCTION_SECONDS };
+export { sellers, SHIPPING_INR, AUCTION_SECONDS, BID_STEP };

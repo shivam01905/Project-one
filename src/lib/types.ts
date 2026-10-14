@@ -2,6 +2,8 @@ export type DemoRole = "buyer" | "seller";
 
 export type LotStatus = "queued" | "live" | "sold" | "passed";
 
+export type AuctionMode = "soft" | "sudden";
+
 export type ShowStatus = "scheduled" | "live" | "ended";
 
 export interface Seller {
@@ -27,6 +29,8 @@ export interface Lot {
   status: LotStatus;
   imageHue: number;
   endsAt: number | null;
+  /** soft = bid near end extends timer; sudden = no extension (Whatnot 💀) */
+  auctionMode: AuctionMode;
 }
 
 export interface Show {

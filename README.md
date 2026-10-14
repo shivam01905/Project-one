@@ -2,7 +2,7 @@
 
 **Thrift live shopping for India** — Whatnot-style seller shows, live bids, chat, and UPI-first prepaid checkout. Pan-India preloved fashion with collector/community energy (not mass discount commerce).
 
-This repo is the first usable product slice: discover a live thrift show, watch a live-room UI (mock stream + chat + current item), bid or Buy It Now, and complete a mock UPI checkout. Sellers get a simple go-live / show control panel.
+This repo is the thrift live MVP: discover a live thrift show, watch a live-room UI (mock stream + chat + current item), **swipe-to-bid** (soft-close or sudden death), quick/max bid, Buy It Now, and complete a mock UPI checkout. Sellers get go-live controls including auction mode per lot.
 
 ## Stack
 

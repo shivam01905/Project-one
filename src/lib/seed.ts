@@ -8,6 +8,16 @@ export const DEMO_BUYER = {
 
 export const DEMO_SELLER_ID = "seller-mira";
 
+/** Default auction length (seconds) */
+export const AUCTION_SECONDS = 30;
+/** Soft-close: bids in the last N ms extend the clock */
+export const SOFT_CLOSE_TRIGGER_MS = 8_000;
+/** Soft-close: reset remaining time to this many ms on late bid */
+export const SOFT_CLOSE_EXTEND_MS = 10_000;
+export const BID_STEP = 100;
+export const QUICK_BID_STEPS = [100, 200, 500] as const;
+export const SHIPPING_INR = 79;
+
 export const sellers: Seller[] = [
   {
     id: "seller-mira",
@@ -58,6 +68,7 @@ export const lots: Record<string, Lot> = {
     status: "live",
     imageHue: 210,
     endsAt: null,
+    auctionMode: "soft",
   },
   "lot-silk-saree": {
     id: "lot-silk-saree",
@@ -73,6 +84,7 @@ export const lots: Record<string, Lot> = {
     status: "queued",
     imageHue: 350,
     endsAt: null,
+    auctionMode: "soft",
   },
   "lot-cargo": {
     id: "lot-cargo",
@@ -88,6 +100,7 @@ export const lots: Record<string, Lot> = {
     status: "queued",
     imageHue: 95,
     endsAt: null,
+    auctionMode: "sudden",
   },
   "lot-leather-boots": {
     id: "lot-leather-boots",
@@ -103,6 +116,7 @@ export const lots: Record<string, Lot> = {
     status: "queued",
     imageHue: 28,
     endsAt: null,
+    auctionMode: "soft",
   },
   "lot-knit": {
     id: "lot-knit",
@@ -118,6 +132,7 @@ export const lots: Record<string, Lot> = {
     status: "live",
     imageHue: 40,
     endsAt: null,
+    auctionMode: "soft",
   },
   "lot-kurta": {
     id: "lot-kurta",
@@ -133,8 +148,9 @@ export const lots: Record<string, Lot> = {
     status: "queued",
     imageHue: 250,
     endsAt: null,
+    auctionMode: "sudden",
   },
-};
+}
 
 export const shows: Show[] = [
   {
@@ -249,6 +265,3 @@ export const initialChat: ChatMessage[] = [
     kind: "chat",
   },
 ];
-
-export const SHIPPING_INR = 79;
-export const AUCTION_SECONDS = 30;
