@@ -206,3 +206,70 @@
 .animate-rise {
   animation: rise-in 0.7s ease-out both;
 }
+
+@keyframes chat-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes urgency {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes lot-in {
+  from {
+    opacity: 0.35;
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes win-burst {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-chat-rise {
+  animation: chat-rise 0.35s ease-out both;
+}
+
+.animate-urgency {
+  animation: urgency 0.85s ease-in-out infinite;
+}
+
+.animate-lot-in {
+  animation: lot-in 0.55s ease-out both;
+}
+
+.animate-win-burst {
+  animation: win-burst 0.55s ease-out both;
+}
+
+.mask-chat-fade {
+  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 100%);
+}

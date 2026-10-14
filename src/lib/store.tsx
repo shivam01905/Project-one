@@ -57,6 +57,8 @@ interface TroviaState {
     lotId: string,
     mode?: AuctionMode,
   ) => void;
+  /** Pin + start next queued lot so the show keeps rolling */
+  advanceToNextLot: (showId: string) => string | null;
   passLot: (showId: string, lotId: string) => void;
   completeMockUpi: (orderId: string, succeed?: boolean) => Order | null;
   pendingOrderId: string | null;
@@ -436,6 +438,56 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
     [lots],
   );
 
+  const advanceToNextLot = useCallback(
+    (showId: string): string | null => {
+      const show = shows.find((s) => s.id === showId);
+      if (!show) return null;
+      const nextId = show.lotIds.find((id) => {
+        const lot = lots[id];
+        return lot && lot.status === "queued" && id !== show.currentLotId;
+      });
+      if (!nextId) return null;
+      setShows((prev) =>
+        prev.map((s) =>
+          s.id === showId ? { ...s, currentLotId: nextId } : s,
+        ),
+      );
+      setLots((prev) => {
+        const next = { ...prev };
+        for (const id of show.lotIds) {
+          if (id !== nextId && next[id]?.status === "live") {
+            next[id] = { ...next[id], status: "passed", endsAt: null };
+          }
+        }
+        const lot = next[nextId];
+        if (lot && lot.status !== "sold") {
+          next[nextId] = {
+            ...lot,
+            status: "live",
+            currentBid: lot.startingBid,
+            bidCount: 0,
+            highBidder: null,
+            endsAt: Date.now() + AUCTION_SECONDS * 1000,
+          };
+        }
+        return next;
+      });
+      setChat((c) => [
+        ...c,
+        {
+          id: `next-${Date.now()}`,
+          showId,
+          user: "system",
+          text: `Next up · ${lots[nextId]?.title ?? "new lot"} — stay in the room`,
+          at: Date.now(),
+          kind: "system",
+        },
+      ]);
+      return nextId;
+    },
+    [shows, lots],
+  );
+
   const passLot = useCallback((showId: string, lotId: string) => {
     setLots((prev) => ({
       ...prev,
@@ -520,6 +572,7 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
       endShow,
       pinLot,
       startAuction,
+      advanceToNextLot,
       passLot,
       completeMockUpi,
       pendingOrderId,
@@ -547,6 +600,7 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
       endShow,
       pinLot,
       startAuction,
+      advanceToNextLot,
       passLot,
       completeMockUpi,
       pendingOrderId,

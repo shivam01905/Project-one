@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { Order } from "@/lib/types";
 import { useTrovia } from "@/lib/store";
 import { formatInr } from "@/lib/format";
@@ -12,15 +11,17 @@ export function CheckoutSheet({
   order,
   open,
   onOpenChange,
+  onPaid,
 }: {
   order: Order | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Stay in the live show — no dead navigation */
+  onPaid?: (order: Order) => void;
 }) {
   const { completeMockUpi, checkoutError, clearCheckoutError } = useTrovia();
   const [upi, setUpi] = useState("you@oksbi");
   const [busy, setBusy] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     if (!open) return;
@@ -45,13 +46,13 @@ export function CheckoutSheet({
     setBusy(false);
     if (result) {
       onOpenChange(false);
-      router.push(`/order/${id}`);
+      onPaid?.(result);
     }
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/55 p-4 sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="checkout-title"
@@ -61,7 +62,7 @@ export function CheckoutSheet({
       }}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-[var(--trovia-ink)]/10 bg-[var(--trovia-paper)] p-5 shadow-xl animate-rise"
+        className="w-full max-w-md rounded-2xl border border-white/10 bg-[var(--trovia-paper)] p-5 shadow-xl animate-rise"
         onClick={(e) => e.stopPropagation()}
       >
         <h2
@@ -71,7 +72,7 @@ export function CheckoutSheet({
           Pay with UPI
         </h2>
         <p className="mt-1 text-sm text-[var(--trovia-muted)]">
-          Prepaid only · mock sandbox. No COD at launch.
+          Prepaid only · mock sandbox. You&apos;ll drop right back into the show.
         </p>
 
         <div className="mt-4 space-y-3 rounded-xl bg-[var(--trovia-ink)]/[0.04] p-4 text-sm">

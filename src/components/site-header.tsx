@@ -20,10 +20,10 @@ export function SiteHeader() {
 
       <nav className="flex items-center gap-2 sm:gap-3">
         <Link
-          href="/"
+          href="/#live"
           className="rounded-md px-2 py-1.5 text-sm text-[var(--trovia-ink)]/80 transition hover:text-[var(--trovia-ink)]"
         >
-          Discover
+          Live
         </Link>
         <Link
           href="/seller"
