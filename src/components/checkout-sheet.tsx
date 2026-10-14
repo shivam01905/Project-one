@@ -1,17 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Order } from "@/lib/types";
 import { useTrovia } from "@/lib/store";
 import { formatInr } from "@/lib/format";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -29,7 +22,16 @@ export function CheckoutSheet({
   const [busy, setBusy] = useState(false);
   const router = useRouter();
 
-  if (!order) return null;
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onOpenChange]);
+
+  if (!open || !order) return null;
 
   const total = order.amount + order.shipping;
 
@@ -48,24 +50,31 @@ export function CheckoutSheet({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        if (!v) clearCheckoutError();
-        onOpenChange(v);
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="checkout-title"
+      onClick={() => {
+        clearCheckoutError();
+        onOpenChange(false);
       }}
     >
-      <DialogContent className="border-[var(--trovia-ink)]/10 bg-[var(--trovia-paper)] sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl tracking-tight">
-            Pay with UPI
-          </DialogTitle>
-          <DialogDescription className="text-[var(--trovia-muted)]">
-            Prepaid only · mock sandbox. No COD at launch.
-          </DialogDescription>
-        </DialogHeader>
+      <div
+        className="w-full max-w-md rounded-2xl border border-[var(--trovia-ink)]/10 bg-[var(--trovia-paper)] p-5 shadow-xl animate-rise"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2
+          id="checkout-title"
+          className="font-display text-2xl tracking-tight"
+        >
+          Pay with UPI
+        </h2>
+        <p className="mt-1 text-sm text-[var(--trovia-muted)]">
+          Prepaid only · mock sandbox. No COD at launch.
+        </p>
 
-        <div className="space-y-3 rounded-xl bg-[var(--trovia-ink)]/[0.04] p-4 text-sm">
+        <div className="mt-4 space-y-3 rounded-xl bg-[var(--trovia-ink)]/[0.04] p-4 text-sm">
           <div className="flex justify-between gap-4">
             <span className="text-[var(--trovia-muted)]">Item</span>
             <span className="max-w-[60%] text-right font-medium">
@@ -76,7 +85,7 @@ export function CheckoutSheet({
             <span className="text-[var(--trovia-muted)]">Price</span>
             <span>{formatInr(order.amount)}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-4">
             <span className="text-[var(--trovia-muted)]">
               Shipping (courier · 3–7 days, India-wide)
             </span>
@@ -88,7 +97,7 @@ export function CheckoutSheet({
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="mt-4 space-y-2">
           <label className="text-xs uppercase tracking-wider text-[var(--trovia-muted)]">
             UPI ID
           </label>
@@ -100,12 +109,12 @@ export function CheckoutSheet({
         </div>
 
         {checkoutError && (
-          <p className="rounded-lg bg-[var(--trovia-coral)]/15 px-3 py-2 text-sm text-[var(--trovia-coral)]">
+          <p className="mt-3 rounded-lg bg-[var(--trovia-coral)]/15 px-3 py-2 text-sm text-[var(--trovia-coral)]">
             {checkoutError}
           </p>
         )}
 
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <Button
             disabled={busy || !upi.includes("@")}
             onClick={() => pay(true)}
@@ -122,7 +131,7 @@ export function CheckoutSheet({
             Simulate fail
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

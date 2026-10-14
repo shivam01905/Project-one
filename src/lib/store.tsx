@@ -78,12 +78,7 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 450);
-    return () => clearTimeout(t);
-  }, []);
+  const [loading] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => {

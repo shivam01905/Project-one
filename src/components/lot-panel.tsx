@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import type { Lot, Order } from "@/lib/types";
 import { useTrovia } from "@/lib/store";
 import { formatInr } from "@/lib/format";
-import { Button } from "@/components/ui/button";
 import { CheckoutSheet } from "@/components/checkout-sheet";
 import { DEMO_BUYER } from "@/lib/seed";
 
@@ -127,8 +126,9 @@ export function LotPanel({
 
         {canBid && (
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <Button
-              className="h-12 bg-[var(--trovia-acid)] text-base font-semibold text-[var(--trovia-ink)] hover:bg-[var(--trovia-acid)]/90"
+            <button
+              type="button"
+              className="h-12 rounded-lg bg-[var(--trovia-acid)] text-base font-semibold text-[var(--trovia-ink)] transition hover:bg-[var(--trovia-acid)]/90"
               onClick={() => {
                 placeBid(showId, lot.id);
                 setFlash(true);
@@ -136,10 +136,10 @@ export function LotPanel({
               }}
             >
               Bid +₹100
-            </Button>
-            <Button
-              variant="outline"
-              className="h-12 border-[var(--trovia-ink)]/20 bg-white/30 text-base font-semibold"
+            </button>
+            <button
+              type="button"
+              className="h-12 rounded-lg border border-[var(--trovia-ink)]/20 bg-white/30 text-base font-semibold transition hover:bg-white/50"
               onClick={() => {
                 const order = createBinOrder(showId, lot.id);
                 if (order) {
@@ -149,7 +149,7 @@ export function LotPanel({
               }}
             >
               Buy Now
-            </Button>
+            </button>
           </div>
         )}
 
