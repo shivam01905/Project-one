@@ -8,8 +8,10 @@ import { LiveChat } from "@/components/live-chat";
 import { LotPanel } from "@/components/lot-panel";
 import { FollowButton } from "@/components/follow-button";
 import { WaShareButton } from "@/components/wa-share-button";
+import { LotsTray } from "@/components/lots-tray";
+import { VodPlayer } from "@/components/vod-player";
 import { useTrovia } from "@/lib/store";
-import { formatViewers } from "@/lib/format";
+import { formatInr, formatViewers } from "@/lib/format";
 import { shareCopyLot, shareCopyShow, shareCopyWin } from "@/lib/share";
 import type { Order } from "@/lib/types";
 
@@ -26,6 +28,8 @@ export default function LiveRoomPage() {
     advanceToNextLot,
     liveAlerts,
     dismissLiveAlert,
+    role,
+    pinLot,
   } = useTrovia();
   const show = shows.find((s) => s.id === showId);
   const seller = show ? getSeller(show.sellerId) : undefined;
@@ -43,6 +47,7 @@ export default function LiveRoomPage() {
     shareText: string;
   } | null>(null);
   const [lotKey, setLotKey] = useState(0);
+  const [peekLotId, setPeekLotId] = useState<string | null>(null);
   const advancedFor = useRef<Set<string>>(new Set());
 
   const liveShows = useMemo(
@@ -54,7 +59,7 @@ export default function LiveRoomPage() {
   const nextShow =
     liveIndex >= 0 && liveIndex < liveShows.length - 1
       ? liveShows[liveIndex + 1]
-      : liveShows.find((s) => s.id !== showId) ?? null;
+      : (liveShows.find((s) => s.id !== showId) ?? null);
 
   const biddingPeople = useMemo(() => {
     if (!lot) return 0;
@@ -76,6 +81,8 @@ export default function LiveRoomPage() {
         )
     : null;
 
+  const peekLot = peekLotId ? lots[peekLotId] : null;
+
   // Keep watching: auto-advance when lot ends
   useEffect(() => {
     if (!show || !lot) return;
@@ -92,6 +99,12 @@ export default function LiveRoomPage() {
   useEffect(() => {
     setLotKey((k) => k + 1);
   }, [show?.currentLotId]);
+
+  useEffect(() => {
+    if (!peekLotId) return;
+    const t = setTimeout(() => setPeekLotId(null), 4500);
+    return () => clearTimeout(t);
+  }, [peekLotId]);
 
   if (!showId || loading) {
     return (
@@ -118,12 +131,80 @@ export default function LiveRoomPage() {
     );
   }
 
+  // Ended show → shoppable VOD replay
+  if (show.status === "ended" && (show.vodHighlights?.length || show.vodDurationSec)) {
+    return (
+      <div className="relative min-h-dvh">
+        <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-3 sm:p-4">
+          <div className="pointer-events-auto max-w-[70%]">
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/"
+                className="font-display text-lg tracking-tight text-white drop-shadow"
+              >
+                Trovia
+              </Link>
+              <span className="rounded bg-white/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/85">
+                Replay
+              </span>
+            </div>
+            <p className="mt-1 truncate text-sm font-medium text-white drop-shadow">
+              {show.title}
+            </p>
+            <p className="truncate text-[11px] text-white/65">
+              {seller?.displayName} · jump to any lot you missed
+            </p>
+            {seller && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <FollowButton sellerId={seller.id} variant="dark" size="sm" />
+                <WaShareButton
+                  text={shareCopyShow(show, seller)}
+                  label="WA"
+                  variant="dark"
+                  className="!py-1"
+                />
+              </div>
+            )}
+          </div>
+          <div className="pointer-events-auto flex flex-col items-end gap-2">
+            <Link
+              href="/#replay"
+              className="rounded-full bg-black/45 px-3 py-1.5 text-[11px] font-medium backdrop-blur hover:bg-black/60"
+            >
+              All replays
+            </Link>
+            <Link
+              href="/#live"
+              className="text-[10px] text-white/50 underline-offset-2 hover:underline"
+            >
+              Live feed
+            </Link>
+          </div>
+        </header>
+        <VodPlayer
+          show={show}
+          lots={lots}
+          sellerName={seller?.displayName ?? "Host"}
+        />
+      </div>
+    );
+  }
+
   function onPaid(order: Order) {
     setWinBanner({
       title: `You got it · ${order.lotTitle}`,
       shareText: shareCopyWin(show!, seller, order.lotTitle),
     });
     setTimeout(() => setWinBanner(null), 8000);
+  }
+
+  function onJumpLot(lotId: string) {
+    if (role === "seller") {
+      pinLot(show!.id, lotId);
+      setPeekLotId(null);
+      return;
+    }
+    setPeekLotId(lotId);
   }
 
   return (
@@ -219,24 +300,60 @@ export default function LiveRoomPage() {
         </div>
       </header>
 
-      {/* Bottom: chat + bids — stay in show */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/35 to-transparent pt-24">
-        <div className="pointer-events-auto mx-auto grid max-w-3xl gap-3 px-3 pb-4 sm:px-4 lg:grid-cols-[1fr_1.15fr]">
-          <LiveChat showId={show.id} variant="overlay" />
-          <div className="space-y-2">
-            {nextQueued && (lot?.status === "sold" || lot?.status === "passed") && (
-              <p className="animate-chat-rise rounded-xl bg-black/50 px-3 py-2 text-xs text-white/80 backdrop-blur">
-                Next up · {nextQueued.title} — stay, don&apos;t bounce
+      {/* Bottom: tray + chat + bids — stay in show */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-20">
+        <div className="pointer-events-auto mx-auto max-w-3xl space-y-2.5 px-3 pb-4 sm:px-4">
+          <LotsTray
+            show={show}
+            lots={lots}
+            activeLotId={peekLotId ?? show.currentLotId}
+            onJump={onJumpLot}
+            variant="live"
+          />
+
+          {peekLot && peekLot.id !== show.currentLotId && (
+            <div className="animate-chat-rise rounded-xl border border-white/15 bg-black/55 px-3 py-2 backdrop-blur">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
+                {peekLot.status === "queued"
+                  ? "Coming up"
+                  : peekLot.status === "sold"
+                    ? "Sold earlier"
+                    : peekLot.status === "passed"
+                      ? "Passed"
+                      : "Lot peek"}
+                {role === "seller" ? " · host can pin" : ""}
               </p>
-            )}
-            <LotPanel
-              showId={show.id}
-              lot={lot}
-              showLive={show.status === "live"}
-              variant="overlay"
-              onPaid={onPaid}
-              biddingPeople={biddingPeople}
-            />
+              <p className="mt-0.5 text-sm font-medium text-white">
+                {peekLot.title}
+              </p>
+              <p className="text-[11px] text-white/60">
+                {peekLot.subtitle} ·{" "}
+                {peekLot.status === "sold"
+                  ? formatInr(peekLot.currentBid)
+                  : `from ${formatInr(peekLot.startingBid)}`}
+                {peekLot.status === "queued" ? " · stay for this drop" : ""}
+              </p>
+            </div>
+          )}
+
+          <div className="grid gap-3 lg:grid-cols-[1fr_1.15fr]">
+            <LiveChat showId={show.id} variant="overlay" />
+            <div className="space-y-2">
+              {nextQueued &&
+                (lot?.status === "sold" || lot?.status === "passed") && (
+                  <p className="animate-chat-rise rounded-xl bg-black/50 px-3 py-2 text-xs text-white/80 backdrop-blur">
+                    Next up · {nextQueued.title} — stay, don&apos;t bounce
+                  </p>
+                )}
+              <LotPanel
+                showId={show.id}
+                lot={lot}
+                showLive={show.status === "live"}
+                variant="overlay"
+                onPaid={onPaid}
+                biddingPeople={biddingPeople}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -25,9 +25,9 @@ export default function SellerPage() {
             {seller?.displayName ?? "Seller"}
           </h1>
           <p className="mt-2 max-w-xl text-sm text-[var(--trovia-muted)]">
-            Demo KYC complete. Go live, pin thrift lots, start auctions. Buyers
-            across India check out prepaid via UPI — courier labels,
-            seller-fulfilled.
+            Demo KYC complete. Go live, pin thrift lots, start auctions — watch
+            viewers, bids/min, and lot GMV on your live pulse. Buyers across
+            India check out prepaid via UPI.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
