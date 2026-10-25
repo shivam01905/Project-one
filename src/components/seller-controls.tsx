@@ -4,6 +4,7 @@ import { useTrovia } from "@/lib/store";
 import { formatInr } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SellerPulse } from "@/components/seller-pulse";
 import type { Show } from "@/lib/types";
 import { auctionModeLabel } from "@/lib/auction";
 
@@ -29,7 +30,7 @@ export function SellerControls({ show }: { show: Show }) {
         <div>
           <h1 className="font-display text-3xl tracking-tight">{show.title}</h1>
           <p className="text-sm text-[var(--trovia-muted)]">
-            Show control · invite-only curated sellers
+            Show control · invite-only curated sellers · live pulse on desk
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -75,6 +76,8 @@ export function SellerControls({ show }: { show: Show }) {
           </Badge>
         </div>
       </div>
+
+      <SellerPulse show={show} />
 
       <div className="rounded-2xl border border-[var(--trovia-ink)]/10 bg-[var(--trovia-panel)]/80 p-4">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--trovia-muted)]">

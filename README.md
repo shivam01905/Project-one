@@ -4,6 +4,8 @@
 
 This repo is the thrift live MVP: discover a live thrift show, watch a live-room UI (mock stream + chat + current item), **swipe-to-bid** (soft-close or sudden death), quick/max bid, Buy It Now, and complete a mock UPI checkout. Sellers get go-live controls including auction mode per lot.
 
+**Slice B:** upcoming-lot / shoppable moments tray in the live room, **VOD replay** with jump-to-lot markers for ended shows, and a **seller live pulse** (viewers · bids/min · lot GMV).
+
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui
@@ -21,8 +23,8 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 ### Demo roles
 
-- **Buyer** (default): Discover → Live room → Bid / Buy Now → mock UPI
-- **Seller**: `/seller` → Go live → Pin lot → Start auction (switch header toggle to Buyer in another tab/flow to bid)
+- **Buyer** (default): Discover → Live room → Bid / Buy Now → mock UPI; browse the lots tray; open an ended show for VOD jump-to-lot
+- **Seller**: `/seller` → Go live → Pin lot → Start auction; watch **Live pulse** (viewers / bids/min / GMV)
 
 ## Product locks (MVP)
 

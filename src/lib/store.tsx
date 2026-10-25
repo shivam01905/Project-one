@@ -108,6 +108,7 @@ function cloneShows(): Show[] {
     ...s,
     lotIds: [...s.lotIds],
     tags: [...s.tags],
+    vodHighlights: s.vodHighlights?.map((h) => ({ ...h })),
   }));
 }
 
@@ -429,11 +430,41 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
 
   const endShow = useCallback(
     (showId: string) => {
+      const show = shows.find((s) => s.id === showId);
+      // Auto VOD markers so ended shows stay shoppable (Kakao-style highlights)
+      const highlights =
+        show?.lotIds.map((lotId, i) => {
+          const lot = lots[lotId];
+          const label =
+            lot?.status === "sold"
+              ? `${lot.title.split("·")[0]?.trim() ?? "Lot"} sold`
+              : lot?.status === "passed" || lot?.status === "live"
+                ? `${lot.title.split("·")[0]?.trim() ?? "Lot"} · wrap`
+                : lot?.title.split("·")[0]?.trim() ?? `Lot ${i + 1}`;
+          return {
+            lotId,
+            atSec: 90 + i * 180,
+            label,
+          };
+        }) ?? [];
       setShows((prev) =>
-        prev.map((s) => (s.id === showId ? { ...s, status: "ended" } : s)),
+        prev.map((s) =>
+          s.id === showId
+            ? {
+                ...s,
+                status: "ended",
+                vodDurationSec:
+                  s.vodDurationSec ??
+                  Math.max(12 * 60, 90 + highlights.length * 180 + 60),
+                vodHighlights:
+                  s.vodHighlights && s.vodHighlights.length > 0
+                    ? s.vodHighlights
+                    : highlights,
+              }
+            : s,
+        ),
       );
       setLots((prev) => {
-        const show = shows.find((s) => s.id === showId);
         if (!show) return prev;
         const next = { ...prev };
         for (const lotId of show.lotIds) {
@@ -444,7 +475,7 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
         return next;
       });
     },
-    [shows],
+    [shows, lots],
   );
 
   const pinLot = useCallback(
