@@ -1,6 +1,7 @@
 import type { Lot, Seller, Show } from "./types";
 
 const FOLLOW_KEY = "trovia.follows.v1";
+const WEAK_NET_KEY = "trovia.weak-network.v1";
 
 export function loadFollows(): string[] {
   if (typeof window === "undefined") return [];
@@ -17,6 +18,21 @@ export function loadFollows(): string[] {
 export function saveFollows(ids: string[]) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(FOLLOW_KEY, JSON.stringify(ids));
+}
+
+/** Demo / 3G fallback preference */
+export function loadWeakNetwork(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(WEAK_NET_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function saveWeakNetwork(on: boolean) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(WEAK_NET_KEY, on ? "1" : "0");
 }
 
 export function appOrigin(): string {

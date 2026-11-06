@@ -1,3 +1,4 @@
+import { defaultConditionCues } from "./condition";
 import type { ChatMessage, Lot, Seller, Show } from "./types";
 
 export const DEMO_BUYER = {
@@ -26,6 +27,8 @@ export const sellers: Seller[] = [
     city: "Bengaluru",
     bio: "90s denim, soft knits, and festival finds — curated live.",
     verified: true,
+    kycStatus: "verified",
+    kycLabel: "KYC · invite seller",
   },
   {
     id: "seller-arjun",
@@ -34,6 +37,8 @@ export const sellers: Seller[] = [
     city: "Mumbai",
     bio: "Street thrift + workwear. Ship India-wide.",
     verified: true,
+    kycStatus: "verified",
+    kycLabel: "KYC · invite seller",
   },
   {
     id: "seller-noor",
@@ -42,6 +47,8 @@ export const sellers: Seller[] = [
     city: "Lucknow",
     bio: "Preloved festive wear & soft silks for every season.",
     verified: true,
+    kycStatus: "verified",
+    kycLabel: "KYC · invite seller",
   },
   {
     id: "seller-kira",
@@ -50,6 +57,8 @@ export const sellers: Seller[] = [
     city: "Jaipur",
     bio: "Block-print jackets, boots, and thrifted layers.",
     verified: true,
+    kycStatus: "verified",
+    kycLabel: "KYC · invite seller",
   },
 ];
 
@@ -69,6 +78,8 @@ export const lots: Record<string, Lot> = {
     imageHue: 210,
     endsAt: null,
     auctionMode: "soft",
+    ownerSellerId: "seller-mira",
+    conditionCues: defaultConditionCues({ fade: true, seams: true }),
   },
   "lot-silk-saree": {
     id: "lot-silk-saree",
@@ -85,6 +96,8 @@ export const lots: Record<string, Lot> = {
     imageHue: 350,
     endsAt: null,
     auctionMode: "soft",
+    ownerSellerId: "seller-noor",
+    conditionCues: defaultConditionCues({ odor: true, tags: true }),
   },
   "lot-cargo": {
     id: "lot-cargo",
@@ -101,6 +114,8 @@ export const lots: Record<string, Lot> = {
     imageHue: 95,
     endsAt: null,
     auctionMode: "sudden",
+    ownerSellerId: "seller-mira",
+    conditionCues: defaultConditionCues({ seams: true, sizeFit: true }),
   },
   "lot-leather-boots": {
     id: "lot-leather-boots",
@@ -117,6 +132,8 @@ export const lots: Record<string, Lot> = {
     imageHue: 28,
     endsAt: null,
     auctionMode: "soft",
+    ownerSellerId: "seller-mira",
+    conditionCues: defaultConditionCues({ fade: true, odor: true }),
   },
   "lot-knit": {
     id: "lot-knit",
@@ -133,6 +150,8 @@ export const lots: Record<string, Lot> = {
     imageHue: 40,
     endsAt: null,
     auctionMode: "soft",
+    ownerSellerId: "seller-arjun",
+    conditionCues: defaultConditionCues({ odor: true, tags: false }),
   },
   "lot-kurta": {
     id: "lot-kurta",
@@ -149,6 +168,81 @@ export const lots: Record<string, Lot> = {
     imageHue: 250,
     endsAt: null,
     auctionMode: "sudden",
+    ownerSellerId: "seller-arjun",
+    conditionCues: defaultConditionCues(),
+  },
+  /* —— Dual-host collab lots (Mira + Noor shared room) —— */
+  "lot-collab-denim": {
+    id: "lot-collab-denim",
+    title: "90s dad jeans · stone wash",
+    subtitle: "Mira's rail · soft thrift fade",
+    condition: "Good",
+    size: "30 / 32",
+    startingBid: 749,
+    buyNowPrice: 1599,
+    currentBid: 749,
+    bidCount: 0,
+    highBidder: null,
+    status: "live",
+    imageHue: 205,
+    endsAt: null,
+    auctionMode: "soft",
+    ownerSellerId: "seller-mira",
+    conditionCues: defaultConditionCues({ fade: true, seams: true }),
+  },
+  "lot-collab-anarkali": {
+    id: "lot-collab-anarkali",
+    title: "Anarkali set · dusty rose",
+    subtitle: "Noor's closet · festive preloved",
+    condition: "Excellent",
+    size: "M",
+    startingBid: 1299,
+    buyNowPrice: 2799,
+    currentBid: 1299,
+    bidCount: 0,
+    highBidder: null,
+    status: "queued",
+    imageHue: 340,
+    endsAt: null,
+    auctionMode: "soft",
+    ownerSellerId: "seller-noor",
+    conditionCues: defaultConditionCues({ odor: true, tags: true }),
+  },
+  "lot-collab-bomber": {
+    id: "lot-collab-bomber",
+    title: "Satin bomber · midnight",
+    subtitle: "Mira drop · light lining wear",
+    condition: "Very good",
+    size: "L",
+    startingBid: 899,
+    buyNowPrice: 1899,
+    currentBid: 899,
+    bidCount: 0,
+    highBidder: null,
+    status: "queued",
+    imageHue: 255,
+    endsAt: null,
+    auctionMode: "sudden",
+    ownerSellerId: "seller-mira",
+    conditionCues: defaultConditionCues({ seams: true, fade: true }),
+  },
+  "lot-collab-dupatta": {
+    id: "lot-collab-dupatta",
+    title: "Chikankari dupatta · ivory",
+    subtitle: "Noor's Nook · hand embroidery",
+    condition: "Excellent",
+    size: "Free",
+    startingBid: 599,
+    buyNowPrice: 1299,
+    currentBid: 599,
+    bidCount: 0,
+    highBidder: null,
+    status: "queued",
+    imageHue: 42,
+    endsAt: null,
+    auctionMode: "soft",
+    ownerSellerId: "seller-noor",
+    conditionCues: defaultConditionCues({ tags: true, odor: true }),
   },
   /* —— Kira Rails VOD recap (sold shoppable moments) —— */
   "lot-vod-block-jacket": {
@@ -166,6 +260,8 @@ export const lots: Record<string, Lot> = {
     imageHue: 18,
     endsAt: null,
     auctionMode: "soft",
+    ownerSellerId: "seller-kira",
+    conditionCues: defaultConditionCues(),
   },
   "lot-vod-ankle-boots": {
     id: "lot-vod-ankle-boots",
@@ -182,6 +278,8 @@ export const lots: Record<string, Lot> = {
     imageHue: 32,
     endsAt: null,
     auctionMode: "soft",
+    ownerSellerId: "seller-kira",
+    conditionCues: defaultConditionCues({ fade: true }),
   },
   "lot-vod-mirror-dupatta": {
     id: "lot-vod-mirror-dupatta",
@@ -198,6 +296,8 @@ export const lots: Record<string, Lot> = {
     imageHue: 48,
     endsAt: null,
     auctionMode: "sudden",
+    ownerSellerId: "seller-kira",
+    conditionCues: defaultConditionCues(),
   },
   "lot-vod-rail-denim": {
     id: "lot-vod-rail-denim",
@@ -214,10 +314,31 @@ export const lots: Record<string, Lot> = {
     imageHue: 205,
     endsAt: null,
     auctionMode: "soft",
+    ownerSellerId: "seller-kira",
+    conditionCues: defaultConditionCues({ seams: false }),
   },
-}
+};
 
 export const shows: Show[] = [
+  {
+    id: "show-collab-live",
+    title: "Dual Closet Collab",
+    titleHi: "ड्यूल क्लोज़ेट कोलैब",
+    sellerId: "seller-mira",
+    coHostIds: ["seller-noor"],
+    status: "live",
+    viewers: 312,
+    tags: ["collab", "denim", "festive", "trust"],
+    coverHue: 310,
+    currentLotId: "lot-collab-denim",
+    lotIds: [
+      "lot-collab-denim",
+      "lot-collab-anarkali",
+      "lot-collab-bomber",
+      "lot-collab-dupatta",
+    ],
+    startedAt: Date.now() - 8 * 60 * 1000,
+  },
   {
     id: "show-mira-live",
     title: "Sunday Closet Drop",
@@ -228,7 +349,12 @@ export const shows: Show[] = [
     tags: ["denim", "knits", "live"],
     coverHue: 200,
     currentLotId: "lot-denim-jacket",
-    lotIds: ["lot-denim-jacket", "lot-silk-saree", "lot-cargo", "lot-leather-boots"],
+    lotIds: [
+      "lot-denim-jacket",
+      "lot-silk-saree",
+      "lot-cargo",
+      "lot-leather-boots",
+    ],
     startedAt: Date.now() - 12 * 60 * 1000,
   },
   {
@@ -301,6 +427,46 @@ export const shows: Show[] = [
 ];
 
 export const initialChat: ChatMessage[] = [
+  {
+    id: "c0a",
+    showId: "show-collab-live",
+    user: "system",
+    text: "Collab room · Mira + Noor — shared thrift night, not gift PK",
+    at: Date.now() - 120000,
+    kind: "system",
+  },
+  {
+    id: "c0b",
+    showId: "show-collab-live",
+    user: "priya_hyd",
+    text: "Both verified? Trust badge dikhao 👀",
+    at: Date.now() - 95000,
+    kind: "chat",
+  },
+  {
+    id: "c0c",
+    showId: "show-collab-live",
+    user: "mirathrift",
+    text: "Both KYC invite sellers · cuff fade called on cam.",
+    at: Date.now() - 80000,
+    kind: "chat",
+  },
+  {
+    id: "c0d",
+    showId: "show-collab-live",
+    user: "noor.nook",
+    text: "Next lot mera Anarkali — condition checklist open.",
+    at: Date.now() - 65000,
+    kind: "chat",
+  },
+  {
+    id: "c0e",
+    showId: "show-collab-live",
+    user: "kabir.pune",
+    text: "3G pe audio+stills mode try kar raha 📶",
+    at: Date.now() - 40000,
+    kind: "chat",
+  },
   {
     id: "c1",
     showId: "show-mira-live",

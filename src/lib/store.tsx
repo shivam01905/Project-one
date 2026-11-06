@@ -20,7 +20,12 @@ import {
   sellers,
   shows as seedShows,
 } from "./seed";
-import { loadFollows, saveFollows } from "./share";
+import {
+  loadFollows,
+  loadWeakNetwork,
+  saveFollows,
+  saveWeakNetwork,
+} from "./share";
 import type {
   AuctionMode,
   BidEvent,
@@ -82,6 +87,10 @@ interface TroviaState {
   pendingOrderId: string | null;
   setPendingOrderId: (id: string | null) => void;
   loading: boolean;
+  /** Weak / 3G fallback — audio + lot stills */
+  weakNetwork: boolean;
+  setWeakNetwork: (on: boolean) => void;
+  toggleWeakNetwork: () => void;
 }
 
 const TroviaContext = createContext<TroviaState | null>(null);
@@ -93,6 +102,7 @@ function cloneLots(): Record<string, Lot> {
       k,
       {
         ...v,
+        conditionCues: v.conditionCues?.map((c) => ({ ...c })),
         // Live seed lots start with an active clock so soft-close is demable
         endsAt:
           v.status === "live"
@@ -108,6 +118,7 @@ function cloneShows(): Show[] {
     ...s,
     lotIds: [...s.lotIds],
     tags: [...s.tags],
+    coHostIds: s.coHostIds ? [...s.coHostIds] : undefined,
     vodHighlights: s.vodHighlights?.map((h) => ({ ...h })),
   }));
 }
@@ -126,16 +137,33 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [loading] = useState(false);
+  const [weakNetwork, setWeakNetworkState] = useState(false);
+  const [prefsReady, setPrefsReady] = useState(false);
 
   useEffect(() => {
     setFollowing(loadFollows());
+    setWeakNetworkState(loadWeakNetwork());
     setFollowsReady(true);
+    setPrefsReady(true);
   }, []);
 
   useEffect(() => {
     if (!followsReady) return;
     saveFollows(following);
   }, [following, followsReady]);
+
+  useEffect(() => {
+    if (!prefsReady) return;
+    saveWeakNetwork(weakNetwork);
+  }, [weakNetwork, prefsReady]);
+
+  const setWeakNetwork = useCallback((on: boolean) => {
+    setWeakNetworkState(on);
+  }, []);
+
+  const toggleWeakNetwork = useCallback(() => {
+    setWeakNetworkState((v) => !v);
+  }, []);
 
   // When follows load, surface any already-live followed sellers
   useEffect(() => {
@@ -712,6 +740,9 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
       pendingOrderId,
       setPendingOrderId,
       loading,
+      weakNetwork,
+      setWeakNetwork,
+      toggleWeakNetwork,
     }),
     [
       role,
@@ -747,6 +778,9 @@ export function TroviaProvider({ children }: { children: ReactNode }) {
       completeMockUpi,
       pendingOrderId,
       loading,
+      weakNetwork,
+      setWeakNetwork,
+      toggleWeakNetwork,
     ],
   );
 

@@ -26,7 +26,7 @@ export function ShowCard({ show }: { show: Show }) {
         <div className="pointer-events-none absolute inset-0 opacity-40 mix-blend-overlay [background-image:radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.25),transparent_45%),radial-gradient(circle_at_80%_70%,rgba(212,255,58,0.15),transparent_40%)]" />
         <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
 
-        <div className="absolute left-3 top-3 flex items-center gap-2">
+        <div className="absolute left-3 top-3 flex flex-wrap items-center gap-2">
           {isLive ? (
             <Badge className="animate-pulse-live border-0 bg-[var(--trovia-coral)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
               Live
@@ -46,6 +46,11 @@ export function ShowCard({ show }: { show: Show }) {
               {show.vodHighlights?.length ? "Replay" : "Ended"}
             </Badge>
           )}
+          {show.coHostIds?.length ? (
+            <Badge className="border-0 bg-[var(--trovia-acid)]/25 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--trovia-acid)]">
+              Collab
+            </Badge>
+          ) : null}
           {isLive && (
             <span className="rounded-full bg-black/35 px-2 py-0.5 text-[10px] text-white/90 backdrop-blur">
               {formatViewers(show.viewers)} watching
@@ -60,6 +65,13 @@ export function ShowCard({ show }: { show: Show }) {
           <p className="mt-0.5 text-xs text-white/65">{show.titleHi}</p>
           <p className="mt-3 text-sm text-white/85">
             {seller?.displayName}
+            {show.coHostIds?.length ? (
+              <span className="text-white/55">
+                {" "}
+                + {show.coHostIds.length} co-host
+                {show.coHostIds.length === 1 ? "" : "s"}
+              </span>
+            ) : null}
             <span className="text-white/45"> · {seller?.city}</span>
           </p>
           {lot && isLive && (

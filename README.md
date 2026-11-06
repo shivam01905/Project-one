@@ -6,6 +6,8 @@ This repo is the thrift live MVP: discover a live thrift show, watch a live-room
 
 **Slice B:** upcoming-lot / shoppable moments tray in the live room, **VOD replay** with jump-to-lot markers for ended shows, and a **seller live pulse** (viewers · bids/min · lot GMV).
 
+**Slice C:** **dual-host thrift collab** (shared room, clear lot ownership — not gift PK), **KYC / verified badge + condition-talk cues**, and **weak-network / 3G fallback** (audio + lot stills toggle).
+
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui
@@ -23,8 +25,8 @@ Open [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 ### Demo roles
 
-- **Buyer** (default): Discover → Live room → Bid / Buy Now → mock UPI; browse the lots tray; open an ended show for VOD jump-to-lot
-- **Seller**: `/seller` → Go live → Pin lot → Start auction; watch **Live pulse** (viewers / bids/min / GMV)
+- **Buyer** (default): Discover → Live room → Bid / Buy Now → mock UPI; browse the lots tray; open an ended show for VOD jump-to-lot; try **Dual Closet Collab**; toggle **Weak network** for audio+stills
+- **Seller**: `/seller` → Go live → Pin lot → Start auction; watch **Live pulse** (viewers / bids/min / GMV); collab shows list lot closet ownership
 
 ## Product locks (MVP)
 

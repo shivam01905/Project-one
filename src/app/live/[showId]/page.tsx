@@ -10,6 +10,10 @@ import { FollowButton } from "@/components/follow-button";
 import { WaShareButton } from "@/components/wa-share-button";
 import { LotsTray } from "@/components/lots-tray";
 import { VodPlayer } from "@/components/vod-player";
+import { CoHostRail } from "@/components/co-host-rail";
+import { TrustBadge } from "@/components/trust-badge";
+import { ConditionCues } from "@/components/condition-cues";
+import { LowBandwidthToggle } from "@/components/low-bandwidth-toggle";
 import { useTrovia } from "@/lib/store";
 import { formatInr, formatViewers } from "@/lib/format";
 import { shareCopyLot, shareCopyShow, shareCopyWin } from "@/lib/share";
@@ -30,10 +34,21 @@ export default function LiveRoomPage() {
     dismissLiveAlert,
     role,
     pinLot,
+    weakNetwork,
+    toggleWeakNetwork,
   } = useTrovia();
   const show = shows.find((s) => s.id === showId);
   const seller = show ? getSeller(show.sellerId) : undefined;
+  const coHosts = useMemo(
+    () =>
+      (show?.coHostIds ?? [])
+        .map((id) => getSeller(id))
+        .filter((s): s is NonNullable<typeof s> => Boolean(s)),
+    [show?.coHostIds, getSeller],
+  );
   const lot = show?.currentLotId ? lots[show.currentLotId] : null;
+  const lotOwnerId = lot?.ownerSellerId ?? show?.sellerId;
+  const lotOwner = lotOwnerId ? getSeller(lotOwnerId) : undefined;
 
   // Clear “seller is live” remind once you're in the room
   useEffect(() => {
@@ -48,6 +63,8 @@ export default function LiveRoomPage() {
   } | null>(null);
   const [lotKey, setLotKey] = useState(0);
   const [peekLotId, setPeekLotId] = useState<string | null>(null);
+  const [focusSellerId, setFocusSellerId] = useState<string | null>(null);
+  const [showTrust, setShowTrust] = useState(true);
   const advancedFor = useRef<Set<string>>(new Set());
 
   const liveShows = useMemo(
@@ -82,6 +99,8 @@ export default function LiveRoomPage() {
     : null;
 
   const peekLot = peekLotId ? lots[peekLotId] : null;
+  const isCollab = Boolean(show?.coHostIds?.length);
+  const activeSellerId = focusSellerId ?? lotOwnerId ?? seller?.id;
 
   // Keep watching: auto-advance when lot ends
   useEffect(() => {
@@ -98,6 +117,7 @@ export default function LiveRoomPage() {
 
   useEffect(() => {
     setLotKey((k) => k + 1);
+    setFocusSellerId(null);
   }, [show?.currentLotId]);
 
   useEffect(() => {
@@ -156,6 +176,7 @@ export default function LiveRoomPage() {
             </p>
             {seller && (
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <TrustBadge seller={seller} variant="dark" />
                 <FollowButton sellerId={seller.id} variant="dark" size="sm" />
                 <WaShareButton
                   text={shareCopyShow(show, seller)}
@@ -207,23 +228,29 @@ export default function LiveRoomPage() {
     setPeekLotId(lotId);
   }
 
+  const speaking =
+    (activeSellerId ? getSeller(activeSellerId) : null) ?? seller ?? null;
+
   return (
     <div className="relative min-h-dvh bg-[#050a08] text-white">
       {/* Full-bleed stage */}
       <div className="absolute inset-0">
-        <div key={lotKey} className="h-full w-full animate-lot-in">
+        <div key={`${lotKey}-${weakNetwork ? "lb" : "hd"}`} className="h-full w-full animate-lot-in">
           <StreamStage
             show={show}
             lot={lot}
             sellerName={seller?.displayName ?? "Host"}
+            coHostName={coHosts[0]?.displayName}
             immersive
+            lowBandwidth={weakNetwork}
+            speakingSeller={speaking}
           />
         </div>
       </div>
 
       {/* Top chrome */}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-3 sm:p-4">
-        <div className="pointer-events-auto flex max-w-[70%] flex-col gap-1">
+        <div className="pointer-events-auto flex max-w-[78%] flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/"
@@ -236,6 +263,11 @@ export default function LiveRoomPage() {
                 Live
               </span>
             )}
+            {isCollab && (
+              <span className="rounded bg-white/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/90">
+                Collab
+              </span>
+            )}
             <span className="rounded bg-black/40 px-1.5 py-0.5 text-[10px] text-white/85 backdrop-blur">
               {formatViewers(show.viewers)} in room
             </span>
@@ -244,11 +276,14 @@ export default function LiveRoomPage() {
             <p className="truncate text-sm font-medium drop-shadow">
               {show.title}
             </p>
-            <p className="truncate text-[11px] text-white/65">
-              {seller?.displayName} · {seller?.city}
-            </p>
-            {seller && (
+            {!isCollab && (
+              <p className="truncate text-[11px] text-white/65">
+                {seller?.displayName} · {seller?.city}
+              </p>
+            )}
+            {seller && !isCollab && (
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <TrustBadge seller={seller} variant="dark" />
                 <FollowButton sellerId={seller.id} variant="dark" size="sm" />
                 <WaShareButton
                   text={
@@ -262,9 +297,36 @@ export default function LiveRoomPage() {
                 />
               </div>
             )}
+            {isCollab && seller && (
+              <div className="mt-1.5">
+                <CoHostRail
+                  show={show}
+                  host={seller}
+                  coHosts={coHosts}
+                  activeSellerId={activeSellerId}
+                  onSelectSeller={setFocusSellerId}
+                />
+                <div className="mt-1.5">
+                  <WaShareButton
+                    text={
+                      lot
+                        ? shareCopyLot(show, seller, lot)
+                        : shareCopyShow(show, seller)
+                    }
+                    label="Share collab on WA"
+                    variant="dark"
+                    className="!py-1"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="pointer-events-auto flex flex-col items-end gap-2">
+          <LowBandwidthToggle
+            enabled={weakNetwork}
+            onToggle={toggleWeakNetwork}
+          />
           <Link
             href="/#live"
             className="rounded-full bg-black/45 px-3 py-1.5 text-[11px] font-medium backdrop-blur hover:bg-black/60"
@@ -291,6 +353,13 @@ export default function LiveRoomPage() {
               </button>
             )}
           </div>
+          <button
+            type="button"
+            className="text-[10px] text-white/50 underline-offset-2 hover:underline"
+            onClick={() => setShowTrust((v) => !v)}
+          >
+            {showTrust ? "Hide trust" : "Show trust"}
+          </button>
           <Link
             href="/seller"
             className="text-[10px] text-white/50 underline-offset-2 hover:underline"
@@ -303,6 +372,22 @@ export default function LiveRoomPage() {
       {/* Bottom: tray + chat + bids — stay in show */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/85 via-black/40 to-transparent pt-20">
         <div className="pointer-events-auto mx-auto max-w-3xl space-y-2.5 px-3 pb-4 sm:px-4">
+          {showTrust && lot && (
+            <div className="space-y-1.5">
+              {lotOwner && (
+                <p className="text-[10px] text-white/55">
+                  Lot from{" "}
+                  <span className="font-semibold text-white/85">
+                    {lotOwner.displayName}
+                  </span>
+                  {isCollab ? " · clear ownership in collab" : ""} ·{" "}
+                  <TrustBadge seller={lotOwner} variant="dark" />
+                </p>
+              )}
+              <ConditionCues lot={lot} variant="overlay" compact />
+            </div>
+          )}
+
           <LotsTray
             show={show}
             lots={lots}
