@@ -19,10 +19,15 @@ export function SellerControls({ show }: { show: Show }) {
     passLot,
     setAuctionMode,
     setRole,
+    getSeller,
   } = useTrovia();
 
   const showLots = show.lotIds.map((id) => lots[id]).filter(Boolean);
   const recentBids = bids.filter((b) => b.showId === show.id).slice(-8).reverse();
+  const host = getSeller(show.sellerId);
+  const coHosts = (show.coHostIds ?? [])
+    .map((id) => getSeller(id))
+    .filter(Boolean);
 
   return (
     <div className="space-y-4">
@@ -31,7 +36,20 @@ export function SellerControls({ show }: { show: Show }) {
           <h1 className="font-display text-3xl tracking-tight">{show.title}</h1>
           <p className="text-sm text-[var(--trovia-muted)]">
             Show control · invite-only curated sellers · live pulse on desk
+            {show.coHostIds?.length
+              ? " · dual-host collab (not gift PK)"
+              : ""}
           </p>
+          {coHosts.length > 0 && (
+            <p className="mt-1 text-xs text-[var(--trovia-acid-ink)]">
+              Host {host?.displayName}
+              {coHosts.map((c) => (
+                <span key={c!.id}> · co-host {c!.displayName}</span>
+              ))}
+              {" · "}
+              {host?.kycLabel}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           {show.status !== "live" && show.status !== "ended" && (
@@ -95,6 +113,9 @@ export function SellerControls({ show }: { show: Show }) {
                   <p className="text-xs text-[var(--trovia-muted)]">
                     {lot.status} · {formatInr(lot.currentBid)} · {lot.bidCount}{" "}
                     bids · {auctionModeLabel(lot.auctionMode)}
+                    {lot.ownerSellerId
+                      ? ` · closet ${getSeller(lot.ownerSellerId)?.displayName?.split("·")[0].trim() ?? lot.ownerSellerId}`
+                      : ""}
                   </p>
                 </div>
                 <div className="flex rounded-full border border-[var(--trovia-ink)]/10 bg-white/50 p-0.5 text-[10px] font-semibold uppercase tracking-wider">

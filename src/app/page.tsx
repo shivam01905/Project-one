@@ -27,12 +27,11 @@ export default function HomePage() {
               Trovia
             </p>
             <h1 className="mt-3 max-w-xl text-lg text-[var(--trovia-ink)]/80 sm:text-xl">
-              Live thrift shows with shoppable lots — rewatch the drop, jump to
-              the jacket you missed.
+              Dual-host thrift nights with KYC trust and bids that survive 3G.
             </h1>
             <p className="mt-2 max-w-lg text-sm text-[var(--trovia-muted)] sm:text-base">
-              Upcoming-lot tray · VOD highlights · seller pulse — pan-India
-              curated closets, courier home.
+              Collab rooms · condition talk · audio+stills fallback — plus
+              shoppable VOD, follow + WA, mock UPI across India.
             </p>
             {following.length > 0 && (
               <p className="mt-2 text-xs font-medium text-[var(--trovia-acid-ink)]">

@@ -6,6 +6,8 @@ export type AuctionMode = "soft" | "sudden";
 
 export type ShowStatus = "scheduled" | "live" | "ended";
 
+export type KycStatus = "verified" | "pending";
+
 export interface Seller {
   id: string;
   handle: string;
@@ -13,6 +15,18 @@ export interface Seller {
   city: string;
   bio: string;
   verified: boolean;
+  /** Invite-only seller identity check (demo) */
+  kycStatus: KycStatus;
+  /** Short badge copy, e.g. "KYC · invite seller" */
+  kycLabel: string;
+}
+
+/** Thrift condition-talk cue — host walks these on camera */
+export interface ConditionCue {
+  id: string;
+  label: string;
+  labelHi?: string;
+  checked: boolean;
 }
 
 export interface Lot {
@@ -31,6 +45,10 @@ export interface Lot {
   endsAt: number | null;
   /** soft = bid near end extends timer; sudden = no extension (Whatnot 💀) */
   auctionMode: AuctionMode;
+  /** Whose closet in a dual-host collab room */
+  ownerSellerId?: string;
+  /** Condition-talk checklist for thrift trust */
+  conditionCues?: ConditionCue[];
 }
 
 /** Shoppable VOD marker — jump to a lot moment in replay */
@@ -57,6 +75,11 @@ export interface Show {
   vodDurationSec?: number;
   /** Jump-to-lot timestamps for auto VOD after live */
   vodHighlights?: VodHighlight[];
+  /**
+   * Dual-host thrift collab — shared room / co-hosts.
+   * Not gift-scored PK.
+   */
+  coHostIds?: string[];
 }
 
 export interface ChatMessage {
