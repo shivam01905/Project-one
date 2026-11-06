@@ -43,7 +43,7 @@ export function ShowCard({ show }: { show: Show }) {
               variant="secondary"
               className="border-0 bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-white/70"
             >
-              Ended
+              {show.vodHighlights?.length ? "Replay" : "Ended"}
             </Badge>
           )}
           {isLive && (
@@ -67,6 +67,11 @@ export function ShowCard({ show }: { show: Show }) {
               Now: {lot.title}
             </p>
           )}
+          {show.status === "ended" && show.vodHighlights?.length ? (
+            <p className="mt-1 text-xs text-[var(--trovia-acid)]">
+              Rewatch · jump to {show.vodHighlights.length} shoppable moments
+            </p>
+          ) : null}
         </div>
       </div>
     </Link>

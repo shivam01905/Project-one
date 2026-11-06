@@ -33,6 +33,14 @@ export interface Lot {
   auctionMode: AuctionMode;
 }
 
+/** Shoppable VOD marker — jump to a lot moment in replay */
+export interface VodHighlight {
+  lotId: string;
+  /** Seconds into the demo replay */
+  atSec: number;
+  label: string;
+}
+
 export interface Show {
   id: string;
   title: string;
@@ -45,6 +53,10 @@ export interface Show {
   currentLotId: string | null;
   lotIds: string[];
   startedAt: number | null;
+  /** Demo replay length (seconds); set for ended shows with VOD */
+  vodDurationSec?: number;
+  /** Jump-to-lot timestamps for auto VOD after live */
+  vodHighlights?: VodHighlight[];
 }
 
 export interface ChatMessage {

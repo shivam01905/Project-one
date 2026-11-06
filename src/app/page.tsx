@@ -27,12 +27,12 @@ export default function HomePage() {
               Trovia
             </p>
             <h1 className="mt-3 max-w-xl text-lg text-[var(--trovia-ink)]/80 sm:text-xl">
-              Follow your thrift hosts — when they go live, we pull you back in
-              (and WA share deep-links to the room).
+              Live thrift shows with shoppable lots — rewatch the drop, jump to
+              the jacket you missed.
             </h1>
             <p className="mt-2 max-w-lg text-sm text-[var(--trovia-muted)] sm:text-base">
-              फॉलो करो · लाइव अलर्ट · WhatsApp share — pan-India curated closets,
-              courier home.
+              Upcoming-lot tray · VOD highlights · seller pulse — pan-India
+              curated closets, courier home.
             </p>
             {following.length > 0 && (
               <p className="mt-2 text-xs font-medium text-[var(--trovia-acid-ink)]">
@@ -102,11 +102,14 @@ export default function HomePage() {
               )}
 
               {ended.length > 0 && (
-                <div className="mt-12">
-                  <h2 className="font-display text-xl tracking-tight text-[var(--trovia-muted)]">
-                    Just ended — catch the next
+                <div id="replay" className="mt-12">
+                  <h2 className="font-display text-2xl tracking-tight">
+                    Rewatch · shoppable VOD
                   </h2>
-                  <div className="mt-4 grid gap-4 opacity-80 sm:grid-cols-2 lg:grid-cols-3">
+                  <p className="mb-5 text-sm text-[var(--trovia-muted)]">
+                    Jump to lot timestamps — catch the piece you scrolled past
+                  </p>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {ended.map((show) => (
                       <ShowCard key={show.id} show={show} />
                     ))}
